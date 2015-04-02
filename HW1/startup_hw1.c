@@ -74,12 +74,12 @@ int main() {
     // set up LED1 (Yellow LED on board) pin as a digital output
 	//ANSELBbits.ANSB7 = 0;--> not needed because B7 is not an analog pin
 	RPB7Rbits.RPB7R = 0b0001;
-    TRISBbits.TRISB7 = 0;
+	TRISBbits.TRISB7 = 0;
 	LATBbits.LATB7 = 1;
     
     // set up LED2 (Green LED on board) as OC1 using Timer2 at 1kHz
-    ANSELBbits.ANSB15 = 0; // 0 for digital, 1 for analog
-    RPB15Rbits.RPB15R = 0b0101; //set B15 as output compare 1
+	ANSELBbits.ANSB15 = 0; // 0 for digital, 1 for analog
+	RPB15Rbits.RPB15R = 0b0101; //set B15 as output compare 1
     
     //Want 1 khz signal
 	T2CONbits.TCKPS = 0;     // Timer2 prescaler N=1 (1:4)
