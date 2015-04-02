@@ -89,16 +89,16 @@ int main() {
 	T2CONbits.ON = 1;        // turn on Timer2
 	OC1CONbits.ON = 1;       // turn on OC1
 
-    OC1RS = 0;
-    OC1R = 0;
+	OC1RS = 0;
+	OC1R = 0;
     
     // set up A0 as AN0
-    ANSELAbits.ANSA0 = 1;
-    AD1CON3bits.ADCS = 3;
-    AD1CHSbits.CH0SA = 0;
-    AD1CON1bits.ADON = 1;
+	ANSELAbits.ANSA0 = 1;
+	AD1CON3bits.ADCS = 3;
+	AD1CHSbits.CH0SA = 0;
+	AD1CON1bits.ADON = 1;
     
-    int val = 0;
+	int val = 0;
     
 	while (1) {
         // invert pin every 0.5s, set PWM duty cycle % to the pot voltage output 
