@@ -35,8 +35,8 @@
 #pragma config USERID = 0x1234 // some 16 bit userid
 #pragma config PMDL1WAY = ON // not multiple reconfiguration, check this
 #pragma config IOL1WAY = ON // not multiple reconfiguration, check this
-#pragma config FUSBIDIO = ON // USB pins controlled by USB module
-#pragma config FVBUSONIO = ON // controlled by USB module
+#pragma config FUSBIDIO = OFF // USB pins controlled by USB module
+#pragma config FVBUSONIO = OFF // controlled by USB module
 
 int main(){
     // startup
@@ -66,7 +66,7 @@ int main(){
 
     //Set phase pins
     //   PH1--> B7
-    RPB7Rbits.RPB7R = 0b001; //Peripheral requires output pin
+//    RPB7Rbits.RPB7R = 0b001; //Peripheral requires output pin
     TRISBbits.TRISB7 = 0; //Make it an output
     LATBbits.LATB7 = 1; //Set it high- this initializes as the forward direction
 
@@ -78,53 +78,56 @@ int main(){
 
     //Set enable pins
     //   EN1--> B5 
+    //ANSELBbits.ANSB5 = 0; //Make it digital
     RPB5Rbits.RPB5R = 0b0101; //Set to OC2
     TRISBbits.TRISB5 = 0; //Make it an output
 
     //   EN2-->B15    
-    //ANSELBbits.ANSB15 = 0; //Make it digital
+    ANSELBbits.ANSB15 = 0; //Make it digital
     RPB15Rbits.RPB15R = 0b0101; //Set to OC1
-    TRISBbits.TRISB14 = 0; //Make it an output
+//    TRISBbits.TRISB15 = 0; //Make it an output
 
     //Set timers:
     //This is to set up PWM frequency for OC pin- this will be altered using potentiometer
 	T2CONbits.TCKPS = 0;     // Timer2 prescaler N=1 (1:4)
-	PR2 = 1999;                 // period = (PR2+1) * N * 12.5 ns = 1 ms, 1 kHz
-	TMR2 = 0;     
+	PR2 = 1999;                 // period = (PR2+1) * N * 12.5 ns = 1 ms, 1 kHz 
+    TMR2 = 0;
+    
  	OC1CONbits.OCM = 0b110;  // PWM mode without fault pin; other OC1CON bits are defaults
     OC1CONbits.OCTSEL = 0; //Using Timer 2 for OC1
-    OC1RS = 500;               //duty cycle = OC1RS/(PR2+1) 25% duty cycle to begin with
-    OC1R = 500;                //initialize before turning OC1 on;        
+    OC1RS = 1000;               //duty cycle = OC1RS/(PR2+1) 25% duty cycle to begin with
+    OC1R = 1000;                //initialize before turning OC1 on;        
 	T2CONbits.ON = 1;        // turn on Timer2
 	OC1CONbits.ON = 1;       // turn on OC1
 
     //This is to set up PWM frequency for OC pin- this will be altered using potentiometer
-	T3CONbits.TCKPS = 0;     // Timer2 prescaler N=1 (1:4)
-	PR3 = 1999;                 // period = (PR2+1) * N * 12.5 ns = 1 ms, 1 kHz
-	TMR3 = 0;     
+
  	OC2CONbits.OCM = 0b110;  // PWM mode without fault pin; other OC1CON bits are defaults
-    OC2CONbits.OCTSEL = 1;     //Using Timer3 for OC3
-    OC2RS = 500;               //duty cycle = OC1RS/(PR2+1)
-    OC2R = 500;                //initialize before turning OC1 on;        
-	T3CONbits.ON = 1;        // turn on Timer2
-	OC2CONbits.ON = 1;       // turn on OC3
+    OC2CONbits.OCTSEL = 0;     //Using Timer2 for OC2
+    OC2RS = 1000;               //duty cycle = OC1RS/(PR2+1)
+    OC2R = 1000;                //initialize before turning OC1 on;        
+	OC2CONbits.ON = 1;       // turn on OC2
     
     __builtin_enable_interrupts();
     
     _CP0_SET_COUNT(0);
     
-    while(_CP0_GET_COUNT()<40000000){
+    
+    while(_CP0_GET_COUNT()<80000000){
         //motor 1 go backwards
         LATBbits.LATB7 = 0;
-        OC1RS = 25*(PR2+1)/100;
-        OC2RS = 25*(PR3+1)/100;
-        _CP0_SET_COUNT(0);        
+        LATBbits.LATB14 = 1;
+        OC1RS = 50*(PR2+1)/100;
+        OC2RS = 50*(PR2+1)/100;        
     }
-    while(_CP0_GET_COUNT()<40000000){
+    _CP0_SET_COUNT(0);
+    
+    while(_CP0_GET_COUNT()<80000000){
         //motor 1 go forwards
         LATBbits.LATB7 = 1;
-        OC1RS = 25*(PR2+1)/100;
-        OC2RS = 25*(PR3+1)/100;
-        _CP0_SET_COUNT(0);        
+        LATBbits.LATB14 = 0;
+        OC1RS = 50*(PR2+1)/100;
+        OC2RS = 50*(PR2+1)/100;
     }
+//    _CP0_SET_COUNT(0);        
 }
