@@ -11,7 +11,9 @@ int main(int argc, char* argv[])
 {
 	int res;
 	unsigned char buf[65];
+	unsigned char rec_mess[65];
 	unsigned char message[25];
+	short accelsx[100], accelsy[100], accelsz[100];
 	wchar_t wstr[MAX_STR];
 	hid_device *handle;
 	int i;
@@ -42,7 +44,7 @@ int main(int argc, char* argv[])
 	// Toggle LED (cmd 0x80). The first byte is the report number (0x0).
 	buf[0] = 0x0;
 	//buf[1] = 0x80;
-	buf[1] = 1;
+	buf[1] = 0x1;
 	printf("Enter the row you'd like to print the message: ");
 	scanf("%d",&buf[2]);
 	printf("Enter a message: ");	
@@ -54,14 +56,54 @@ int main(int argc, char* argv[])
 	//buf[1] = 0x81;
 	//res = hid_write(handle, buf, 65);
 
-	// Read requested state
-	//res = hid_read(handle, buf, 65);
-
+	res = hid_read(handle,buf,65);
+	
+	if(buf[0] == 0x1 && buf[1] == 0x3){
+		buf[0] = 0x0;
+		buf[1] = 0x2;
+		res = hid_write(handle,buf,65);
+		printf("Accelerometer reading!\n");
+	}
+	
+	
 	// Print out the returned buffer.
-	for (i = 0; i < 4; i++){
-		printf("buf[%d]: %d\n", i, buf[i]);
+	i = 0;
+	
+	while(i<100){
+		// Read requested state
+		res = hid_read(handle, buf, 65);
+		
+		if (buf[0]==0x1 && buf[1]==0x2){
+			accelsx[i] = (buf[2]<<8) | buf[3];
+			accelsy[i] = (buf[4]<<8) | buf[5];
+			accelsz[i] = (buf[6]<<8) | buf[7];
+			
+			buf[0] = 0x0;
+			buf[1] = 0x2;
+			res = hid_write(handle,buf,65);
+			i++;
+		}
+	//printf("buf[%d]: %d\n", i, buf[i]);
 	}
 	// Finalize the hidapi library
+	
+	printf("Accelerometer reading has completed.\n");
+	buf[0] = 0x0;
+	buf[1] = 0x80;
+	res = hid_write(handle,buf,65);
+	
+	FILE *ofp;
+	
+	ofp = fopen("accels.txt", "w");
+
+	for (i = 0; i< 100; i++) {
+
+		fprintf(ofp, "%d %d %d\n", accelsx[i], accelsy[i], accelsz[i]);
+
+	}
+
+	fclose(ofp);
+
 	res = hid_exit();
 
 	return 0;

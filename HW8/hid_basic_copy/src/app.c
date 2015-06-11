@@ -172,7 +172,8 @@ uint8_t  transmitDataBuffer[64] APP_MAKE_BUFFER_DMA_READY;
 
 //Set up buffer for char
 char message2[20];
-
+char message3[20];
+short accels2[6];
 int col, row;
 
 // *****************************************************************************
@@ -391,7 +392,6 @@ void APP_Tasks (void )
 
     /* Check if device is configured.  See if it is configured with correct
      * configuration value  */
-
     switch(appData.state)
     {
         case APP_STATE_INIT:
@@ -450,15 +450,16 @@ void APP_Tasks (void )
                         int j = 0;
                         int val = 2;
                         char let;
-                        display_clear();
+                        //display_clear();
                         /* Toggle on board LED1 to LED2. */
-                        BSP_LEDToggle( APP_USB_LED_1 );
                         BSP_LEDToggle( APP_USB_LED_2 );
+                        //BSP_LEDToggle( APP_USB_LED_3 );
                         
                         //the row was scanned into element [1] of the sent message
                         row = (int)appData.receiveDataBuffer[1];
                         
                         i = 0;
+                        sprintf(message2,"                    ");
                         while(appData.receiveDataBuffer[val] != 0){
                             message2[i] = (char)appData.receiveDataBuffer[val];
                             i++;
@@ -473,33 +474,110 @@ void APP_Tasks (void )
                         //Need to draw the pixels because the pixels are set prior to this, but not written
                         display_draw();
                         
+                        appData.transmitDataBuffer[0] = 0x1;
+                        appData.transmitDataBuffer[1] = 0x3;
+                        
+                        
+                        appData.hidDataTransmitted = false;
+                        USB_DEVICE_HID_ReportSend(USB_DEVICE_HID_INDEX_0, &appData.txTransferHandle,appData.transmitDataBuffer, 64);
                         appData.hidDataReceived = false;
-
                         /* Place a new read request. */
                         USB_DEVICE_HID_ReportReceive (USB_DEVICE_HID_INDEX_0,
                                 &appData.rxTransferHandle, appData.receiveDataBuffer, 64 );
 
                         break;
+                        _CP0_SET_COUNT(0);
 
+                    case 0x2://0x81:
+
+                        //if(appData.hidDataTransmitted)
+                        //{
+                            /* Echo back to the host PC the command we are fulfilling in
+                             * the first byte.  In this case, the Get Push-button State
+                             * command. */
+
+                            //appData.transmitDataBuffer[0] = 0x1;//0x81;
+                            
+                            //char message3[64];
+                            
+                            acc_read_register(OUT_X_L_A, (unsigned char *) accels2, 6);
+                            //sprintf(message3,"x: %d, y: %d, z: %d", accels2[0],accels2[1],accels2[2]);
+                            oled_write(0,0,message3);
+                            display_draw();
+                            
+                            if(_CP0_GET_COUNT() > 200000)
+                            //if( BSP_SwitchStateGet(APP_USB_SWITCH_1) == BSP_SWITCH_STATE_PRESSED )
+                            {
+                                appData.transmitDataBuffer[0] = 0x1;
+                                _CP0_SET_COUNT(0);
+                            }
+                            
+                            else
+                            {
+                                appData.transmitDataBuffer[0] = 0x0;
+                            }
+                            
+                            int ii = 0;
+                            int jj = 0;
+                            
+//                            sprintf(message3,"val: %d", appData.transmitDataBuffer[2] == (appData.transmitDataBuffer[2]<<8));
+//                            oled_write(0,0,message3);
+//                            display_draw();
+                            
+                            appData.transmitDataBuffer[1] = 0x2;
+                            for(i = 2; i<=7; i++){
+                                if(i%2 == 0){
+                                    appData.transmitDataBuffer[i] = accels2[ii]>>8;
+                                }
+                                if(i%2 !=0){
+                                    appData.transmitDataBuffer[i] = accels2[ii]&0xFF;
+                                    ii++;
+                                }
+                            }
+                            //appData.transmitDataBuffer[1] = 0x2;
+                            appData.hidDataTransmitted = false;
+
+                            /* Prepare the USB module to send the data packet to the host */
+                            USB_DEVICE_HID_ReportSend (USB_DEVICE_HID_INDEX_0,
+                                    &appData.txTransferHandle, appData.transmitDataBuffer, 64 );
+
+                            appData.hidDataReceived = false;
+
+                            /* Place a new read request. */
+                            USB_DEVICE_HID_ReportReceive (USB_DEVICE_HID_INDEX_0,
+                                    &appData.rxTransferHandle, appData.receiveDataBuffer, 64 );
+                        //}
+                        break;
+                    
+                    case 0x80:
+                        BSP_LEDToggle(APP_USB_LED_1);
+                        BSP_LEDToggle(APP_USB_LED_2);
+
+                        appData.hidDataReceived = false;
+
+                        /* Place a new read request. */
+                        USB_DEVICE_HID_ReportReceive (USB_DEVICE_HID_INDEX_0, &appData.rxTransferHandle, appData.receiveDataBuffer, 64 );                        
+                        break;
+                    
                     case 0x81:
-
                         if(appData.hidDataTransmitted)
                         {
                             /* Echo back to the host PC the command we are fulfilling in
                              * the first byte.  In this case, the Get Push-button State
                              * command. */
 
-                            appData.transmitDataBuffer[0] = 0x81;
-
+                            appData.transmitDataBuffer[0] = 0x81;//0x81;
+                            
                             if( BSP_SwitchStateGet(APP_USB_SWITCH_1) == BSP_SWITCH_STATE_PRESSED )
                             {
-                                appData.transmitDataBuffer[1] = 0x00;
+                                appData.transmitDataBuffer[1] = 0x0;
                             }
+                            
                             else
                             {
-                                appData.transmitDataBuffer[1] = 0x01;
+                                appData.transmitDataBuffer[1] = 0x1;
                             }
-
+                            
                             appData.hidDataTransmitted = false;
 
                             /* Prepare the USB module to send the data packet to the host */
@@ -512,7 +590,7 @@ void APP_Tasks (void )
                             USB_DEVICE_HID_ReportReceive (USB_DEVICE_HID_INDEX_0,
                                     &appData.rxTransferHandle, appData.receiveDataBuffer, 64 );
                         }
-                        break;
+                        break;                        
 
                     default:
 
