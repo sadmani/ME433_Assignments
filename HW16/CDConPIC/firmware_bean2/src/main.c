@@ -74,6 +74,59 @@ int main ( void )
     ANSELBbits.ANSB15 = 0; //Make it digital
     TRISBbits.TRISB15 = 0;
     TRISBbits.TRISB7 = 0;
+
+	__builtin_enable_interrupts();
+    
+    // set up USER pin as input
+	ANSELBbits.ANSB13 = 0;
+	TRISBbits.TRISB13 = 1;
+
+    //Set phase pins
+    //   PH1--> B7
+//    RPB7Rbits.RPB7R = 0b001; //Peripheral requires output pin
+    TRISBbits.TRISB7 = 0; //Make it an output
+    LATBbits.LATB7 = 1; //Set it high- this initializes as the forward direction
+
+    //   PH2-->B14
+    ANSELBbits.ANSB14 = 0; //Make it digital
+    RPB14Rbits.RPB14R = 0b001;
+    TRISBbits.TRISB14 = 0; //Make it an output
+    LATBbits.LATB14 = 0; //Set it high- this initializes as the forward direction    
+
+    //Set enable pins
+    //   EN1--> B5 
+    //ANSELBbits.ANSB5 = 0; //Make it digital
+    RPB5Rbits.RPB5R = 0b0101; //Set to OC2
+    TRISBbits.TRISB5 = 0; //Make it an output
+
+    //   EN2-->B15    
+    ANSELBbits.ANSB15 = 0; //Make it digital
+    RPB15Rbits.RPB15R = 0b0101; //Set to OC1
+//    TRISBbits.TRISB15 = 0; //Make it an output
+
+    //Set timers:
+    //This is to set up PWM frequency for OC pin- this will be altered using potentiometer
+	T2CONbits.TCKPS = 0;     // Timer2 prescaler N=1 (1:4)
+	PR2 = 1999;                 // period = (PR2+1) * N * 12.5 ns = 1 ms, 1 kHz 
+    TMR2 = 0;
+    
+ 	OC1CONbits.OCM = 0b110;  // PWM mode without fault pin; other OC1CON bits are defaults
+    OC1CONbits.OCTSEL = 0; //Using Timer 2 for OC1
+    OC1RS = 0;               //duty cycle = OC1RS/(PR2+1) 25% duty cycle to begin with
+    OC1R = 0;                //initialize before turning OC1 on;        
+	T2CONbits.ON = 1;        // turn on Timer2
+	OC1CONbits.ON = 1;       // turn on OC1
+
+    //This is to set up PWM frequency for OC pin- this will be altered using potentiometer
+
+ 	OC2CONbits.OCM = 0b110;  // PWM mode without fault pin; other OC1CON bits are defaults
+    OC2CONbits.OCTSEL = 0;     //Using Timer2 for OC2
+    OC2RS = 0;               //duty cycle = OC1RS/(PR2+1)
+    OC2R = 0;                //initialize before turning OC1 on;        
+	OC2CONbits.ON = 1;       // turn on OC2
+    
+    __builtin_enable_interrupts();
+    
     SYS_Initialize ( NULL );
     
     while ( true )
